@@ -1,5 +1,5 @@
 [package]
-name = "muzzle"
+name = "puffer"
 version = "0.1.0"
 authors = ["Fishy <caspar.m.green@gmail.com>"]
 edition = "2018"
@@ -10,3 +10,5 @@ edition = "2018"
 rodio = { version = "0.14.0", default-features = false, features = ["flac", "vorbis", "wav"] }
 hound = "3.4.0"
 rand = "0.8.4"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"

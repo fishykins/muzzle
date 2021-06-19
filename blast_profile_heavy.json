@@ -1,0 +1,75 @@
+{
+    "delay": {
+        "secs": 0,
+        "nanos": 36000000
+    },
+    "peak": 0.3,
+    "positive_phase_duration": {
+        "secs": 0,
+        "nanos": 60000000
+    },
+    "curve": 1.4,
+    "bands": [
+        [
+            {
+                "frequency": 20.0,
+                "width": 3.0,
+                "amplitude": 0.5,
+                "weight": 32,
+                "diffraction": 200
+            },
+            "Cumulative"
+        ],
+        [
+            {
+                "frequency": 400.0,
+                "width": 6.0,
+                "amplitude": 0.2,
+                "weight": 12,
+                "diffraction": 1000
+            },
+            "Cumulative"
+        ],
+        [
+            {
+                "frequency": 600.0,
+                "width": 12.0,
+                "amplitude": 0.1,
+                "weight": 5,
+                "diffraction": 250
+            },
+            "Cumulative"
+        ],
+        [
+            {
+                "frequency": 800.0,
+                "width": 5.0,
+                "amplitude": 0.2,
+                "weight": 2,
+                "diffraction": 300
+            },
+            "Random"
+        ],
+        [
+            {
+                "frequency": 1600.0,
+                "width": 4.0,
+                "amplitude": 0.2,
+                "weight": 2,
+                "diffraction": 500
+            },
+            "Random"
+        ],
+        [
+            {
+                "frequency": 10000.0,
+                "width": 2.0,
+                "amplitude": 0.1,
+                "weight": 16,
+                "diffraction": 5000
+            },
+            "Cumulative"
+        ]
+    ],
+    "transient_clipping": 24
+}

@@ -32,19 +32,6 @@ impl CubicBezier {
     }
 
     pub fn amplitude(&self, time: Duration) -> f64 {
-
-        // let t: f64;
-
-        // if time.as_secs_f64() <= self.start.as_secs_f64() {
-        //     t = 0.0;
-        //     return 0.0;
-        // } else if time.as_secs_f64() >= self.end.as_secs_f64() {
-        //     t = 1.0;
-        //     return 0.0;
-        // } else {
-        //     t = time.as_secs_f64() / (self.end.as_secs_f64() - self.start.as_secs_f64());
-        // }
-
         let t = time.as_secs_f64() / (self.end.as_secs_f64() - self.start.as_secs_f64());
 
         let y = 

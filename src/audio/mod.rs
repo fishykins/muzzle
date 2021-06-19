@@ -1,37 +1,21 @@
 pub mod bezier;
+mod blast_profile;
+mod blast_wave;
 pub mod friedlander_wave;
-mod blast;
 mod shock_wave;
 
-pub use blast::*;
+pub use blast_profile::BlastProfile;
+pub use blast_wave::*;
 
 pub const SAMPLERATE: u32 = 48000;
 
 #[test]
-pub fn test_audio() {
+pub fn test_blast() {
     use hound;
     use std::i16;
-    use std::time::Duration;
-    use rodio::Source;
 
-    let (_stream, stream_handle) = rodio::OutputStream::try_default().unwrap();
-
-    let _source = rodio::source::SineWave::new(150);
-    let muzzleblast = Blast::new(
-        Duration::from_millis(36),
-        0.3,
-        Duration::from_millis(60),
-        1.4,
-        vec![
-            (HarmonicBand {frequency: 49.0, width: 4.0, amplitude: 0.5, weight: 20, diffraction: 2000}, HarmonicGeneration::Cumulative),
-            (HarmonicBand {frequency: 120.0, width: 12.0, amplitude: 0.3, weight: 6, diffraction: 1500}, HarmonicGeneration::Cumulative),
-            (HarmonicBand {frequency: 600.0, width: 12.0, amplitude: 0.1, weight: 5, diffraction: 250}, HarmonicGeneration::Cumulative),
-            (HarmonicBand {frequency: 800.0, width: 5.0, amplitude: 0.2, weight: 2, diffraction: 300}, HarmonicGeneration::Random),
-            (HarmonicBand {frequency: 1600.0, width: 4.0, amplitude: 0.2, weight: 2, diffraction: 500}, HarmonicGeneration::Random),
-        ],
-        32
-    );
-    
+    let blast_profile_heavy = BlastProfile::from_file("blast_profile_heavy");
+    let blast_profile_light = BlastProfile::from_file("blast_profile_light");
     // Render it!
     let spec = hound::WavSpec {
         channels: 1,
@@ -40,18 +24,24 @@ pub fn test_audio() {
         sample_format: hound::SampleFormat::Int,
     };
 
+    // Write to file
     let mut writer = hound::WavWriter::create("impact.wav", spec).unwrap();
     let amplitude = i16::MAX as f32;
-
-    for t in muzzleblast.clone().into_iter() {
+    for t in BlastWave::new(&blast_profile_heavy).into_iter() {
         writer.write_sample((t * amplitude) as i16).unwrap();
     }
 
-    // Play audio!!
+    // Play audio from buffer, which does not require the above "write to file" segment
+    let (_stream, stream_handle) = rodio::OutputStream::try_default().unwrap();
     let sink = rodio::Sink::try_new(&stream_handle).unwrap();
-    sink.append(muzzleblast.clone());
+    sink.append(BlastWave::new(&blast_profile_heavy));
+    sink.append(BlastWave::new(&blast_profile_light));
+    sink.append(BlastWave::new(&blast_profile_light));
+    sink.append(BlastWave::new(&blast_profile_light));
+    sink.append(BlastWave::new(&blast_profile_heavy));
+    sink.append(BlastWave::new(&blast_profile_heavy));
+    sink.append(BlastWave::new(&blast_profile_light));
+    sink.append(BlastWave::new(&blast_profile_heavy));
     sink.set_volume(0.5);
-    let duration = muzzleblast.total_duration();
-    println!("Blast is {:?} long", duration);
-    std::thread::sleep(duration.unwrap());
+    sink.sleep_until_end();
 }

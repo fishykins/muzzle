@@ -1,15 +1,17 @@
 use super::friedlander_wave::FriedlanderWave;
 use rand::prelude::*;
 use rodio::Source;
+use serde::{Deserialize, Serialize};
 use std::time::Duration;
+use super::BlastProfile;
 
 const TIMEOUT: u64 = 30;
 const ENDTOLLERANCE: f32 = 0.00001;
 
 #[derive(Clone)]
-pub struct Blast {
+pub struct BlastWave {
     /// Harmonics to superimpose on the curve
-    harmonics: Vec<Harmonic>,
+    harmonics: Vec<BlastHarmonic>,
     /// Higher clipping = faster decay
     transient_clipping: u16,
 
@@ -22,7 +24,7 @@ pub struct Blast {
 }
 
 #[derive(Clone)]
-struct Harmonic {
+struct BlastHarmonic {
     freq: f32,
     amplitude: f32,
     inversion: (f32, f32),
@@ -30,12 +32,14 @@ struct Harmonic {
     diffraction: i32,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum HarmonicGeneration {
     Cumulative,
     Random,
 }
 
-pub struct HarmonicBand {
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct BlastHarmonicBand {
     pub frequency: f32,
     pub width: f32,
     pub amplitude: f32,
@@ -43,8 +47,8 @@ pub struct HarmonicBand {
     pub diffraction: u32,
 }
 
-impl Harmonic {
-    fn cumulative_generation(i: usize, band: &HarmonicBand, rng: &mut ThreadRng) -> Self {
+impl BlastHarmonic {
+    fn cumulative_generation(i: usize, band: &BlastHarmonicBand, rng: &mut ThreadRng) -> Self {
         Self {
             freq: band.frequency
                 * rng.gen_range(1f32..(1f32 + (1f32 + band.width) / i as f32))
@@ -60,7 +64,7 @@ impl Harmonic {
         }
     }
 
-    fn random_generation(band: &HarmonicBand, rng: &mut ThreadRng) -> Self {
+    fn random_generation(band: &BlastHarmonicBand, rng: &mut ThreadRng) -> Self {
         Self {
             freq: band.frequency * rng.gen_range(1f32..band.width),
             amplitude: band.amplitude * rng.gen_range(0.1f32..1f32),
@@ -75,51 +79,36 @@ impl Harmonic {
     }
 }
 
-impl Blast {
-    pub fn new(
-        delay: Duration,
-        peak: f32,
-        positive_phase_duration: Duration,
-        curve: f32,
-        bands: Vec<(HarmonicBand, HarmonicGeneration)>,
-        transient_clipping: u16,
-    ) -> Self {
-        let c = if curve > 1.0 { curve } else { 1.01 };
+impl BlastWave {
+    pub fn new(profile: &BlastProfile) -> Self {
+        let c = if profile.curve > 1.0 { profile.curve } else { 1.01 };
         let mut harmonics = Vec::new();
         let mut rng = rand::thread_rng();
 
         // Generate harmonics
-        for (band, generation) in bands.iter() {
+        for (band, generation) in profile.bands.iter() {
             for i in 1..(1 + band.weight) {
                 let h = match generation {
-                    HarmonicGeneration::Random => Harmonic::random_generation(band, &mut rng),
+                    HarmonicGeneration::Random => BlastHarmonic::random_generation(band, &mut rng),
                     HarmonicGeneration::Cumulative => {
-                        Harmonic::cumulative_generation(i as usize, band, &mut rng)
+                        BlastHarmonic::cumulative_generation(i as usize, band, &mut rng)
                     }
                 };
-
-                println!(
-                    "Harmonic b{}-{} generated with a freq of {} and a diffraction of {}",
-                    band.frequency, i, h.freq, h.diffraction
-                );
                 harmonics.push(h);
             }
         }
-
-        println!("There are {} harmonics in the buffer", harmonics.len());
-
         let mut me = Self {
             sample: 0,
             last_curve_sample: -100.0,
             last_sine_sample: -100.0,
             friedlander: FriedlanderWave::new(
-                delay.as_secs_f32(),
-                peak,
-                positive_phase_duration.as_secs_f32(),
+                profile.delay.as_secs_f32(),
+                profile.peak,
+                profile.positive_phase_duration.as_secs_f32(),
                 c,
             ),
             harmonics,
-            transient_clipping,
+            transient_clipping: profile.transient_clipping,
             length: None,
         };
 
@@ -189,7 +178,7 @@ impl Blast {
     }
 }
 
-impl Iterator for Blast {
+impl Iterator for BlastWave {
     type Item = f32;
 
     #[inline]
@@ -219,7 +208,7 @@ impl Iterator for Blast {
     }
 }
 
-impl Source for Blast {
+impl Source for BlastWave {
     #[inline]
     fn current_frame_len(&self) -> Option<usize> {
         None
